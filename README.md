@@ -54,8 +54,9 @@ compilación ocurre en los runners de GitHub.
   contenedor `barichello/godot-ci:4.3`.
 - Importa recursos y exporta el preset `Android Debug` a `build/graviton-rush.apk`.
 - Verifica que el APK exista y muestra su `package`/`versionName` con `aapt`.
-- Publica el APK como artefacto y corre un smoke test headless de la lógica
-  (informativo: si falla, el APK ya está disponible pero conviene revisar el log).
+- Publica el APK como artefacto y, **después** de subirlo, corre un smoke test
+  headless de la lógica. Si el smoke test falla, el run queda en rojo pero el APK
+  ya está descargable en el artefacto (útil para diagnosticar sin bloquear la entrega).
 
 ## Estructura
 
