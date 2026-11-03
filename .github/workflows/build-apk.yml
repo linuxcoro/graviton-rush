@@ -1,0 +1,91 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Android debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preparar Godot, Android SDK y keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --version
+          VER="$(godot --version | cut -d. -f1,2)"
+          echo "Godot: ${VER}.stable"
+          mkdir -p "$HOME/.config/godot" "$HOME/.local/share/godot/export_templates"
+          if [ -d /root/.config/godot ]; then
+            cp -R /root/.config/godot/. "$HOME/.config/godot/"
+          fi
+          if [ -d "/root/.local/share/godot/export_templates/${VER}.stable" ]; then
+            cp -R "/root/.local/share/godot/export_templates/${VER}.stable" "$HOME/.local/share/godot/export_templates/"
+          fi
+          SETTINGS="$HOME/.config/godot/editor_settings-${VER}.tres"
+          if [ ! -f "$SETTINGS" ]; then
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
+          fi
+          if ! grep -q 'android_sdk_path' "$SETTINGS"; then
+            printf 'export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"\n' >> "$SETTINGS"
+            printf 'export/android/android_sdk_path = "/usr/lib/android-sdk"\n' >> "$SETTINGS"
+            printf 'export/android/debug_keystore = "/root/debug.keystore"\n' >> "$SETTINGS"
+            printf 'export/android/debug_keystore_user = "androiddebugkey"\n' >> "$SETTINGS"
+            printf 'export/android/debug_keystore_pass = "android"\n' >> "$SETTINGS"
+          fi
+          echo "--- plantillas de exportación ---"
+          ls -la "$HOME/.local/share/godot/export_templates/" || true
+          echo "--- build-tools ---"
+          ls /usr/lib/android-sdk/build-tools || true
+          echo "--- editor settings ---"
+          grep -H android "$HOME/.config/godot/"*.tres || true
+
+      - name: Importar recursos (opcional)
+        continue-on-error: true
+        shell: bash
+        run: godot --headless --path "$GITHUB_WORKSPACE" --editor --quit
+
+      - name: Exportar APK debug
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          godot --headless --verbose --path "$GITHUB_WORKSPACE" --export-debug "Android Debug" "$GITHUB_WORKSPACE/build/graviton-rush.apk"
+
+      - name: Verificar APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lh build
+          test -s build/graviton-rush.apk
+          if [ -x /usr/lib/android-sdk/build-tools/33.0.2/aapt ]; then
+            /usr/lib/android-sdk/build-tools/33.0.2/aapt dump badging build/graviton-rush.apk | head -6 || true
+          fi
+
+      - name: Publicar artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: graviton-rush-apk
+          path: build/graviton-rush.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Smoke test de la lógica (informativo)
+        continue-on-error: true
+        shell: bash
+        run: godot --headless --path "$GITHUB_WORKSPACE" --script res://tests/smoke.gd
