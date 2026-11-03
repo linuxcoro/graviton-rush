@@ -48,6 +48,20 @@ compilación ocurre en los runners de GitHub.
    probar, no para publicar en Play Store.
 6. Para volver a compilar sin cambiar código: **Actions → Build APK → Run workflow**.
 
+### Descarga directa (Releases)
+
+Cada tag `v*` compila y publica un **Release** con el APK adjunto, así se puede
+descargar sin iniciar sesión:
+
+<https://github.com/linuxcoro/graviton-rush/releases/latest>
+
+Para publicar una versión nueva:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
 ### Qué revisa el workflow
 
 - Prepara Godot 4.3 + export templates + Android SDK + keystore debug dentro del
@@ -57,6 +71,8 @@ compilación ocurre en los runners de GitHub.
 - Publica el APK como artefacto y, **después** de subirlo, corre un smoke test
   headless de la lógica. Si el smoke test falla, el run queda en rojo pero el APK
   ya está descargable en el artefacto (útil para diagnosticar sin bloquear la entrega).
+- Si el push fue de un tag `v*`, espera al build y crea/actualiza el Release con el
+  APK adjunto (job `release`, con `contents: write` solo en ese job).
 
 ## Estructura
 
