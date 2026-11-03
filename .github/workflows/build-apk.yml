@@ -65,11 +65,38 @@ jobs:
         run: godot --headless --path "$GITHUB_WORKSPACE" --editor --quit
 
       - name: Exportar APK debug
+        id: export
         shell: bash
         run: |
-          set -euo pipefail
           mkdir -p build
-          godot --headless --verbose --path "$GITHUB_WORKSPACE" --export-debug "Android Debug" "$GITHUB_WORKSPACE/build/graviton-rush.apk"
+          set +e
+          godot --headless --verbose --path "$GITHUB_WORKSPACE" --export-debug "Android Debug" "$GITHUB_WORKSPACE/build/graviton-rush.apk" > build/export.log 2>&1
+          status=$?
+          cat build/export.log
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "godot=$(godot --version 2>&1 | head -1)"
+              echo "templates=$(find "$HOME/.local/share/godot/export_templates" -maxdepth 2 -name 'android_debug.apk' 2>/dev/null | tr '\n' ' ')"
+              echo "build_tools=$(ls /usr/lib/android-sdk/build-tools 2>/dev/null | tr '\n' ' ')"
+              echo "settings=$(grep -h 'android_sdk_path' "$HOME/.config/godot/"*.tres 2>/dev/null | tr '\n' ' ')"
+              echo "--- lineas con error ---"
+              grep -aiE "error|failed|missing|invalid|not found|cannot|unable|not installed|no export|keystore|sdk|parse" build/export.log | tail -n 25
+              echo "--- cola del log ---"
+              tail -n 10 build/export.log
+            } > build/diag.txt
+            MSG=$(cut -c1-1000 build/diag.txt | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n')
+            echo "::error::$MSG"
+            exit "$status"
+          fi
+
+      - name: Subir log del export si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-log
+          path: build/export.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Verificar APK
         shell: bash
