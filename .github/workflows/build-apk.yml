@@ -28,29 +28,34 @@ jobs:
         run: |
           set -euo pipefail
           godot --version
-          VER="$(godot --version 2>/dev/null | cut -d. -f1,2)"
-          if [ -z "$VER" ]; then VER="4.3"; fi
-          echo "Godot: ${VER}.stable"
+          VER_MM="$(godot --version 2>/dev/null | cut -d. -f1,2)"
+          if [ -z "$VER_MM" ]; then VER_MM="4.3"; fi
+          echo "Godot ${VER_MM}: usando editor_settings-${VER_MM}.tres"
           mkdir -p "$HOME/.config/godot" "$HOME/.local/share/godot/export_templates"
+          # EditorSettings y export templates que dejó la imagen en /root.
           if [ -d /root/.config/godot ]; then
             cp -R /root/.config/godot/. "$HOME/.config/godot/"
           fi
-          if [ -d "/root/.local/share/godot/export_templates/${VER}.stable" ]; then
-            cp -R "/root/.local/share/godot/export_templates/${VER}.stable" "$HOME/.local/share/godot/export_templates/"
+          if [ -d /root/.local/share/godot/export_templates ]; then
+            cp -R /root/.local/share/godot/export_templates/. "$HOME/.local/share/godot/export_templates/"
           fi
-          # EditorSettings deterministas: ruta del SDK, JDK y keystore debug del contenedor.
-          SETTINGS="$HOME/.config/godot/editor_settings-${VER}.tres"
-          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"
-          printf 'export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"\n' >> "$SETTINGS"
-          printf 'export/android/android_sdk_path = "/usr/lib/android-sdk"\n' >> "$SETTINGS"
-          printf 'export/android/debug_keystore = "/root/debug.keystore"\n' >> "$SETTINGS"
-          printf 'export/android/debug_keystore_user = "androiddebugkey"\n' >> "$SETTINGS"
-          printf 'export/android/debug_keystore_pass = "android"\n' >> "$SETTINGS"
-          printf 'export/android/force_system_user = false\n' >> "$SETTINGS"
+          # EditorSettings deterministas: SDK, JDK y keystore debug del contenedor.
+          # Se escriben ambos nombres de archivo (4.3+ y 4.2) para no depender de la versión.
+          for S in "$HOME/.config/godot/editor_settings-${VER_MM}.tres" "$HOME/.config/godot/editor_settings-4.tres"; do
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$S"
+            printf 'export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"\n' >> "$S"
+            printf 'export/android/android_sdk_path = "/usr/lib/android-sdk"\n' >> "$S"
+            printf 'export/android/debug_keystore = "/root/debug.keystore"\n' >> "$S"
+            printf 'export/android/debug_keystore_user = "androiddebugkey"\n' >> "$S"
+            printf 'export/android/debug_keystore_pass = "android"\n' >> "$S"
+            printf 'export/android/force_system_user = false\n' >> "$S"
+          done
           echo "--- plantillas de exportación ---"
-          ls -la "$HOME/.local/share/godot/export_templates/" || true
+          find "$HOME/.local/share/godot/export_templates" -maxdepth 3 \( -name 'android_*.apk' -o -name 'android_source.zip' \) -print || true
           echo "--- build-tools ---"
           ls /usr/lib/android-sdk/build-tools || true
+          echo "--- keystore ---"
+          ls -l /root/debug.keystore || true
           echo "--- editor settings ---"
           grep -H android "$HOME/.config/godot/"*.tres || true
 
