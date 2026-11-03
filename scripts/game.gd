@@ -76,9 +76,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	var tapped := false
 	if event is InputEventScreenTouch:
 		tapped = (event as InputEventScreenTouch).pressed
-	elif event is InputEventMouseButton:
-		var mb := event as InputEventMouseButton
-		tapped = mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT
 	elif event is InputEventKey:
 		var k := event as InputEventKey
 		tapped = k.pressed and not k.echo and (k.keycode == KEY_SPACE or k.keycode == KEY_ENTER)
@@ -92,10 +89,6 @@ func _notification(what: int) -> void:
 		if state == State.PLAYING:
 			app_paused = true
 			hud.show_paused(true)
-	elif what == MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN or what == MainLoop.NOTIFICATION_APPLICATION_RESUMED:
-		if app_paused:
-			app_paused = false
-			hud.show_paused(false)
 
 
 func _tap() -> void:

@@ -13,7 +13,6 @@ var ready_done := false
 const AMBER := Color(1.0, 0.72, 0.16)
 const LASER := Color(1.0, 0.35, 0.55)
 
-
 func setup(p_kind: String, p_width: float, f_y: float, c_y: float) -> void:
 	kind = p_kind
 	width = p_width

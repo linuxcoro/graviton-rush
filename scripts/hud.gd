@@ -42,8 +42,8 @@ func _ready() -> void:
 func _make_label(font_size: int, c: Color, align: int) -> Label:
 	var l := Label.new()
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	l.horizontal_alignment = align
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.set("horizontal_alignment", align)
+	l.set("vertical_alignment", VERTICAL_ALIGNMENT_CENTER)
 	l.add_theme_font_size_override("font_size", font_size)
 	l.add_theme_color_override("font_color", c)
 	l.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.7))

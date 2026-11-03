@@ -55,13 +55,13 @@ func _spawn(pos: Vector2, vel: Vector2, c: Color, life: float, size: float) -> v
 func step(delta: float) -> void:
 	for i in range(particles.size() - 1, -1, -1):
 		var p: Dictionary = particles[i]
-		p["life"] -= delta
+		p["life"] = p["life"] - delta
 		if p["life"] <= 0.0:
 			particles.remove_at(i)
 			continue
-		p["v"] += Vector2(0.0, 900.0) * delta
-		p["p"] += p["v"] * delta
-		p["v"] *= 0.985
+		p["v"] = p["v"] + Vector2(0.0, 900.0) * delta
+		p["p"] = p["p"] + p["v"] * delta
+		p["v"] = p["v"] * 0.985
 	if shake_time > 0.0:
 		shake_time = maxf(0.0, shake_time - delta)
 		var k: float = shake_time / shake_duration

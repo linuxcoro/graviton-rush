@@ -20,6 +20,7 @@ func _check(condition: bool, label: String) -> void:
 
 func _run() -> void:
 	print("GRAVITON RUSH · smoke test")
+	await process_frame
 	var packed = load("res://scenes/Main.tscn")
 	_check(packed != null, "carga Main.tscn")
 	if packed == null:
